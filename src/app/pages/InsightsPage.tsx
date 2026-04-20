@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import svgPaths from "../../imports/MidinerocreceV6DeudaDeExperiencia/svg-curwnqj0xs";
 import { loadActiveDatasetMeta } from "../../features/import";
 import { useDatasetStore } from "../../store/datasetStore";
 import { useUiStore } from "../../store/uiStore";
+import { rowRepository } from "../../db";
+import { buildInsightsSummary, type InsightsSummary } from "../../features/data";
 
 function SearchIconFigma() {
   return (
@@ -87,6 +89,17 @@ function FilterIconFigma() {
   );
 }
 
+function truncateLabel(value: string, maxLength = 48): string {
+  if (value.length <= maxLength) {
+    return value;
+  }
+  return `${value.slice(0, maxLength).trim()}...`;
+}
+
+function formatPercentage(value: number): string {
+  return `${value.toFixed(1)}%`;
+}
+
 export function InsightsPage() {
   const searchQuery = useUiStore((state) => state.searchQuery);
   const setSearchQuery = useUiStore((state) => state.setSearchQuery);
@@ -97,6 +110,9 @@ export function InsightsPage() {
     (state) => state.activeDataset?.name ?? "Nombre del archivo",
   );
   const activeDatasetId = useDatasetStore((state) => state.activeDataset?.id ?? null);
+
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
+  const [insights, setInsights] = useState<InsightsSummary | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -116,6 +132,33 @@ export function InsightsPage() {
       active = false;
     };
   }, [setActiveDataset]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!activeDatasetId) {
+      setInsights(null);
+      setIsLoadingInsights(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setIsLoadingInsights(true);
+    void (async () => {
+      const persistedRows = await rowRepository.getAllByDataset(activeDatasetId);
+      if (!active) {
+        return;
+      }
+
+      setInsights(buildInsightsSummary(persistedRows));
+      setIsLoadingInsights(false);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [activeDatasetId]);
 
   return (
     <>
@@ -270,16 +313,7 @@ export function InsightsPage() {
           )}
 
           <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
-            {activeDatasetId ? (
-              <div
-                className="h-full rounded-[8px]"
-                style={{ border: "1px solid #e6e6e6", background: "#fff" }}
-              >
-                <div className="p-6 text-sm text-muted-foreground">
-                  Insights will be displayed here.
-                </div>
-              </div>
-            ) : (
+            {!activeDatasetId ? (
               <div
                 className="rounded-[8px] flex items-center justify-center h-full"
                 style={{ border: "1px solid #e6e6e6", background: "#fff" }}
@@ -291,8 +325,275 @@ export function InsightsPage() {
                     color: "#666",
                   }}
                 >
-                  No hay datos importados. Importa un archivo para comenzar.
+                  No hay datos importados. Importa un archivo en Diagnóstico para habilitar Insights.
                 </span>
+              </div>
+            ) : isLoadingInsights || !insights ? (
+              <div
+                className="rounded-[8px] flex items-center justify-center h-full"
+                style={{ border: "1px solid #e6e6e6", background: "#fff" }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 14,
+                    color: "#666",
+                  }}
+                >
+                  Cargando insights...
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 pb-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                  {[
+                    { label: "Total iniciativas", value: insights.kpis.totalIniciativas },
+                    { label: "En desarrollo", value: insights.kpis.enDesarrollo },
+                    { label: "No abordada aún", value: insights.kpis.noAbordadaAun },
+                    { label: "Prioridad Alta", value: insights.kpis.prioridadAlta },
+                  ].map((card) => (
+                    <div
+                      key={card.label}
+                      className="rounded-[8px]"
+                      style={{
+                        border: "1px solid #e6e6e6",
+                        background: "#fff",
+                        padding: 14,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: 12,
+                          color: "#666",
+                          marginBottom: 6,
+                        }}
+                      >
+                        {card.label}
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontWeight: 700,
+                          fontSize: 28,
+                          lineHeight: "30px",
+                          color: "#1f1f1f",
+                        }}
+                      >
+                        {card.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <div
+                    className="rounded-[8px]"
+                    style={{ border: "1px solid #e6e6e6", background: "#fff", padding: 14 }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: "#2b2b2b",
+                        marginBottom: 10,
+                      }}
+                    >
+                      Combinaciones de riesgo
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {insights.riskCombinations.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-3"
+                          style={{
+                            border: "1px solid #f0f0f0",
+                            borderRadius: 8,
+                            padding: "8px 10px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 13,
+                              color: "#444",
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontWeight: 600,
+                              fontSize: 13,
+                              color: "#2b2b2b",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {item.count} ({formatPercentage(item.percentage)})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div
+                    className="rounded-[8px]"
+                    style={{ border: "1px solid #e6e6e6", background: "#fff", padding: 14 }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: "#2b2b2b",
+                        marginBottom: 10,
+                      }}
+                    >
+                      Top deudas recurrentes
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {insights.topDeudaExperiencia.map((item, index) => (
+                        <div
+                          key={`${item.value}-${index}`}
+                          className="flex items-center justify-between gap-3 p-1"
+                        >
+                          <span
+                            title={item.value}
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 13,
+                              color: "#444",
+                            }}
+                          >
+                            {index + 1}. {truncateLabel(item.value)}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontWeight: 600,
+                              fontSize: 13,
+                              color: "#2b2b2b",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {item.count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <div
+                    className="rounded-[8px]"
+                    style={{ border: "1px solid #e6e6e6", background: "#fff", padding: 14 }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: "#2b2b2b",
+                        marginBottom: 10,
+                      }}
+                    >
+                      Distribución por estado
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {insights.estadoDistribution.map((item) => (
+                        <div key={item.value} className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              style={{
+                                fontFamily: "'Inter', sans-serif",
+                                fontSize: 13,
+                                color: "#444",
+                              }}
+                            >
+                              {item.value}
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: "'Inter', sans-serif",
+                                fontWeight: 600,
+                                fontSize: 12,
+                                color: "#2b2b2b",
+                              }}
+                            >
+                              {item.count} ({formatPercentage(item.percentage)})
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              height: 6,
+                              borderRadius: 999,
+                              background: "#f1f1f1",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${Math.min(100, Math.max(0, item.percentage))}%`,
+                                height: "100%",
+                                background: "#fa6400",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div
+                    className="rounded-[8px]"
+                    style={{ border: "1px solid #e6e6e6", background: "#fff", padding: 14 }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: "#2b2b2b",
+                        marginBottom: 10,
+                      }}
+                    >
+                      Top canales
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {insights.topCanal.map((item, index) => (
+                        <div
+                          key={`${item.value}-${index}`}
+                          className="flex items-center justify-between gap-3"
+                        >
+                          <span
+                            title={item.value}
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 13,
+                              color: "#444",
+                            }}
+                          >
+                            {index + 1}. {truncateLabel(item.value, 36)}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontWeight: 600,
+                              fontSize: 13,
+                              color: "#2b2b2b",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {item.count} ({formatPercentage(item.percentage)})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
