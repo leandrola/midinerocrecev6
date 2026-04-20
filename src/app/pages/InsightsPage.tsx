@@ -4,7 +4,12 @@ import { loadActiveDatasetMeta } from "../../features/import";
 import { useDatasetStore } from "../../store/datasetStore";
 import { useUiStore } from "../../store/uiStore";
 import { rowRepository } from "../../db";
-import { buildInsightsSummary, type InsightsSummary } from "../../features/data";
+import {
+  buildInsightRecommendations,
+  buildInsightsSummary,
+  type InsightRecommendation,
+  type InsightsSummary,
+} from "../../features/data";
 
 function SearchIconFigma() {
   return (
@@ -113,6 +118,7 @@ export function InsightsPage() {
 
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const [insights, setInsights] = useState<InsightsSummary | null>(null);
+  const [recommendations, setRecommendations] = useState<InsightRecommendation[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -138,6 +144,7 @@ export function InsightsPage() {
 
     if (!activeDatasetId) {
       setInsights(null);
+      setRecommendations([]);
       setIsLoadingInsights(false);
       return () => {
         active = false;
@@ -152,6 +159,7 @@ export function InsightsPage() {
       }
 
       setInsights(buildInsightsSummary(persistedRows));
+      setRecommendations(buildInsightRecommendations(persistedRows));
       setIsLoadingInsights(false);
     })();
 
@@ -593,6 +601,90 @@ export function InsightsPage() {
                       ))}
                     </div>
                   </div>
+                </div>
+
+                <div
+                  className="rounded-[8px]"
+                  style={{ border: "1px solid #e6e6e6", background: "#fff", padding: 14 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: "#2b2b2b",
+                      marginBottom: 10,
+                    }}
+                  >
+                    Recomendaciones automáticas
+                  </div>
+                  {recommendations.length === 0 ? (
+                    <div
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: 13,
+                        color: "#666",
+                      }}
+                    >
+                      No se detectaron alertas relevantes en el dataset actual
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {recommendations.map((item, index) => {
+                        const palette =
+                          item.type === "alert"
+                            ? { bg: "#fff5f4", border: "#fecdca", dot: "#d92d20" }
+                            : item.type === "risk"
+                              ? { bg: "#fffaeb", border: "#fedf89", dot: "#b54708" }
+                              : { bg: "#eff8ff", border: "#b2ddff", dot: "#175cd3" };
+                        return (
+                          <div
+                            key={`${item.type}-${item.severity}-${index}`}
+                            className="flex items-start gap-3 rounded-[8px]"
+                            style={{
+                              padding: "10px 12px",
+                              background: palette.bg,
+                              border: `1px solid ${palette.border}`,
+                            }}
+                          >
+                            <span
+                              style={{
+                                marginTop: 2,
+                                width: 8,
+                                height: 8,
+                                borderRadius: 999,
+                                background: palette.dot,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div
+                                style={{
+                                  fontFamily: "'Inter', sans-serif",
+                                  fontWeight: 600,
+                                  fontSize: 12,
+                                  color: "#2b2b2b",
+                                  textTransform: "capitalize",
+                                  marginBottom: 2,
+                                }}
+                              >
+                                {item.type} · {item.severity}
+                              </div>
+                              <div
+                                style={{
+                                  fontFamily: "'Inter', sans-serif",
+                                  fontSize: 13,
+                                  color: "#333",
+                                }}
+                              >
+                                {item.message}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

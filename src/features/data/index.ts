@@ -1,4 +1,5 @@
 export * from "./insights";
+export * from "./insightRecommendations";
 export * from "./normalize";
 export * from "./sankeyTransforms";
 export * from "./selectors";
