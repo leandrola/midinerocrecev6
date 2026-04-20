@@ -1,139 +1,232 @@
-# midinerocrece v6
+# Mi Dinero Crece v6
 
-midinerocrece v6 is a properly layered client-side ingestion and analysis SPA, with a solid import/persistence architecture.
+SPA built with Vite + React + TypeScript for **experience diagnosis ingestion and project traceability**.
 
-This project is a Vite + React + TypeScript SPA for **experience diagnosis data ingestion and analysis**.
+---
 
-The core business flow is:
-1. User uploads an `.xlsx` file.
-2. The app parses and normalizes workbook data in-browser.
-3. Data is validated.
-4. Previous dataset is fully overwritten in IndexedDB.
-5. Zustand store is updated.
-6. UI renders persisted table data and chart summaries.
+## Webapp Goal
+
+This application is designed to support Project Managers by:
+
+* Visualizing project flow and status
+* Identifying experience debt
+* Understanding prioritization vs feasibility
+* Enabling decision-making (not just visualization)
+
+All features must serve this goal.
+
+---
 
 ## Tech Stack
 
-- Vite 6
-- React 18
-- TypeScript (strict)
-- Tailwind + existing generated UI primitives
-- Recharts
-- React Router
-- Zustand (global app/UI state)
-- Dexie (IndexedDB persistence)
-- xlsx / SheetJS (Excel parsing)
+* Vite 6
+* React 18
+* TypeScript (strict)
+* Zustand (state management)
+* Dexie (IndexedDB persistence)
+* ECharts (Sankey visualization)
+* Tailwind CSS
 
-## Current Product Behavior
+---
 
-### Routes
+## Core Flow
 
-- `/diagnostico`: main working screen.
-- `/proyectos`: placeholder screen.
-- `/` redirects to `/diagnostico`.
+1. User imports an `.xlsx` file
+2. Data is parsed and normalized in-browser
+3. Header row is ignored
+4. Dataset replaces previous data in IndexedDB
+5. Zustand store updates active dataset
+6. UI renders:
 
-### Diagnóstico page behavior
+   * Diagnostico table
+   * Proyectos Sankey chart
 
-- `Importar archivo` opens file picker (`.xlsx` only).
-- Import status is shown (`reading_file`, `parsing_workbook`, `normalizing_data`, `persisting_dataset`, `completed`, `error`).
-- Imported dataset name is shown in header (loaded from persisted active dataset on page mount).
-- If there is an active dataset:
-  - a Recharts bar chart shows row count per sheet.
-  - table renders persisted data from Dexie.
-- If there is no active dataset:
-  - table falls back to legacy mock table component.
+---
 
-## Architecture
+## Runtime Constraints (CRITICAL)
 
-### Top-level structure
+* The application MUST run fully offline
+* NO external APIs are allowed
+* NO remote calls (AI, analytics, CDNs, etc.)
+* NO API keys allowed
+* All logic must run locally in the browser
 
-- `src/db/`: Dexie setup and repository layer.
-- `src/store/`: Zustand stores for dataset/import and UI state.
-- `src/features/import/`: Excel parsing + import orchestration.
-- `src/features/data/`: pure transformation/validation/selectors/chart transforms.
-- `src/types/`: domain types.
-- `src/utils/`: small shared helpers.
-- `src/app/`: routing, pages, layout, and UI components.
+This is a strict constraint for all future changes.
 
-### DB layer (`src/db`)
+---
 
-- `appDb.ts`: Dexie instance and table definitions.
-- `schema.ts`: persisted entity types.
-- `repositories/datasetRepository.ts`:
-  - `replaceActiveDataset` performs atomic full overwrite.
-  - clear rows + datasets, then insert new active dataset + rows.
-  - chunked bulk inserts for large datasets.
-- `repositories/rowRepository.ts`:
-  - row count, page reads, by-sheet reads, all-by-dataset reads, sheet-count aggregation.
+## Data Source
 
-### Store layer (`src/store`)
+* The ONLY data source is the imported `.xlsx` file
+* Data is persisted using IndexedDB (Dexie)
+* Each import MUST fully replace the previous dataset
 
-- `datasetStore.ts`:
-  - `activeDataset`, `isLoading`, `importStatus`.
-  - lifecycle helpers: `startImport`, `setImportPhase`, `completeImport`, `failImport`.
-- `uiStore.ts`:
-  - `searchQuery`, `showFilters`, `selectedRowIds`.
+### Forbidden:
 
-### Import flow (`src/features/import`)
+* mock data
+* fallback data
+* hardcoded datasets
+* demo/sample content
 
-- `parseWorkbook.ts`:
-  - reads ArrayBuffer from file.
-  - parses workbook with `xlsx`.
-  - converts each sheet to matrix.
-- `headerMapping.ts`:
-  - detects probable header row in first N rows.
-- `features/data/normalize.ts`:
-  - normalizes headers.
-  - applies fallback header names.
-  - removes empty rows.
-  - coerces mixed cell values to typed union.
-- `features/data/validate.ts`:
-  - validates workbook/sheets/rows.
-  - blocks import on `error` severity.
-- `importService.ts`:
-  - orchestrates parsing -> validation -> Dexie overwrite -> result summary.
+### Behavior rule:
 
-### Data rendering layer
+If no file is imported:
+→ The UI must show empty state (no rows, no charts)
 
-- `PersistedDiagnosticoTable.tsx`:
-  - reads persisted rows by active dataset.
-  - applies search/sort/pagination via pure selectors in `features/data/selectors.ts`.
-- `charts/DatasetOverviewChart.tsx`:
-  - fetches row counts per sheet from repo.
-  - uses `features/data/chartTransforms.ts` for chart-ready data.
-  - renders Recharts `BarChart`.
+---
 
-## Data Flow (runtime)
+## Data Mapping Rules
 
-`DiagnosticoPage` -> `importDatasetFromXlsx(file)` -> `parseWorkbookFile` -> `normalizeSheetFromMatrix` -> `validateWorkbookStructure` -> `datasetRepository.replaceActiveDataset` -> `datasetStore.setActiveDataset` -> UI updates (`DatasetOverviewChart` + `PersistedDiagnosticoTable`).
+* Excel structure is FIXED
+* Headers NEVER change
+* Mapping is strictly position-based
 
-## File-level entry points
+### Column mapping:
 
-- App entry: `src/main.tsx`
-- Router: `src/app/routes.tsx`
-- Main page: `src/app/pages/DiagnosticoPage.tsx`
-- Import orchestration: `src/features/import/importService.ts`
-- DB instance: `src/db/appDb.ts`
-- Global stores: `src/store/datasetStore.ts`, `src/store/uiStore.ts`
+0  → producto
+1  → funcionalidad
+2  → canal
+3  → squad
+4  → deudaExperiencia
+5  → objetivoDolor
+6  → kpi
+7  → cuandoSeDetecto
+8  → recurrencia
+9  → criticidad
+10 → cliente
+11 → prioridadDiseno
+12 → prioridadSquad
+13 → factibilidadTecnica
+14 → racionalNivel
+15 → fueCorregida
+16 → estado
 
-## Commands
+---
 
-- `npm install`
-- `npm run dev`
-- `npm run typecheck`
-- `npm run build`
+## Rendering Rules
 
-## Important constraints for future refactors
+* UI must NOT use Excel headers
+* Table headers are defined in the app
+* DO NOT render using:
 
-- Do not store datasets in `localStorage`; use Dexie/IndexedDB only.
-- Keep persistence logic out of React components.
-- Keep UI state in Zustand; do not couple with DB/repository implementation details.
-- Keep transformation logic in `features/data`, not JSX.
-- Keep Recharts for charts (already integrated).
+  * `Object.values()`
+  * dynamic column inference
 
-## Known limitations / technical debt
+Always map explicitly by field.
 
-- `PersistedDiagnosticoTable` currently loads all rows into memory for client-side search/sort/pagination. This is acceptable for now but should evolve to indexed DB-level querying for very large datasets.
-- Bundle size warning exists (xlsx + charting code in main chunk). Dynamic import/code splitting is a good next optimization.
-- Legacy mock table component still exists as fallback path when no persisted dataset is active.
-- `ProyectosPage` is still placeholder.
+---
+
+## Sankey Model (Proyectos View)
+
+The Sankey represents project flow:
+
+canal → funcionalidad → deudaExperiencia → prioridadDiseno → factibilidadTecnica → estado
+
+### Rules:
+
+* Order is FIXED
+* No reordering
+* No inference
+* Must be derived only from persisted dataset
+
+---
+
+## Sankey Behavior
+
+### Label truncation:
+
+* `funcionalidad` → max 15 chars
+* `deudaExperiencia` → max 15 chars
+* Use ellipsis ("...")
+* Do NOT modify underlying data
+
+### Interaction:
+
+* Hover must highlight full connected subgraph
+* Must include upstream and downstream nodes
+
+---
+
+## Feature Flags
+
+All major behavioral changes must be reversible.
+
+Example:
+
+```ts
+const USE_FULL_SUBGRAPH_HIGHLIGHT = true;
+```
+
+Rules:
+
+* Keep previous behavior intact
+* Allow easy rollback
+* Do not overwrite existing logic permanently
+
+---
+
+## Architecture Rules
+
+* Persistence logic MUST be outside React components
+* Transformation logic MUST NOT live in JSX
+* UI must be a pure rendering layer
+* Separate:
+
+  * data access
+  * transformation
+  * visualization
+
+---
+
+## Anti-patterns (DO NOT DO)
+
+* Do not use mock data
+* Do not fetch remote resources
+* Do not rely on Excel headers
+* Do not use dynamic schema inference
+* Do not use `Object.values()` for rendering
+* Do not introduce external dependencies without approval
+
+---
+
+## Offline-First Requirement
+
+* App must work fully without internet
+* All assets must be bundled locally
+* No runtime dependency on network
+* IndexedDB is the only persistence layer
+
+---
+
+## Development Rules
+
+* Prefer deterministic logic over heuristics
+* Avoid unnecessary abstractions
+* Every feature must be explainable
+* Focus on PM value, not visual complexity
+
+---
+
+## AI Usage Policy (Future)
+
+AI features are optional and must:
+
+* be local-first where possible
+* be decoupled from core functionality
+* NEVER block the main app flow
+* NEVER introduce external API dependency without approval
+
+---
+
+## 📌 Summary
+
+This application is a **local-first, deterministic decision tool for PMs**.
+
+It is NOT:
+
+* a demo app
+* a data playground
+* a generic BI tool
+
+It is:
+→ a controlled system for importing, visualizing, and understanding project flow and experience debt.
