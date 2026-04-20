@@ -686,7 +686,39 @@ export function InsightsPage() {
                     </div>
                   )}
                 </div>
+                <div
+                  className="rounded-[8px]"
+                  style={{ border: "1px solid #e6e6e6", background: "#fcfcfc", padding: 14 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      color: "#2b2b2b",
+                      marginBottom: 8,
+                    }}
+                  >
+                    ¿Cómo funciona este análisis?
+                  </div>
+                  <ul
+                    style={{
+                      margin: 0,
+                      paddingLeft: 18,
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: 13,
+                      color: "#4d4d4d",
+                      display: "grid",
+                      gap: 6,
+                    }}
+                  >
+                    <li>Se analiza la información del archivo que cargaste.</li>
+                    <li>Se organizan los datos para ver volumen, estados, prioridades y recurrencias.</li>
+                    <li>Se detectan combinaciones y situaciones relevantes para ayudarte a priorizar decisiones.</li>
+                  </ul>
+                </div>
               </div>
+              
             )}
           </div>
         </div>
