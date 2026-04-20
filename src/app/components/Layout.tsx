@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { Home, Activity, FolderKanban } from "lucide-react";
+import { Home, Activity, Lightbulb, FolderKanban } from "lucide-react";
 import svgPaths from "../../imports/MidinerocreceV6DeudaDeExperiencia/svg-curwnqj0xs";
 
 // ─────────────────────────────────────────────
@@ -138,6 +138,17 @@ export function Layout() {
             }
             active={active("/diagnostico")}
             onClick={() => navigate("/diagnostico")}
+          />
+          <NavItem
+            label="Insights"
+            icon={
+              <Lightbulb
+                size={16}
+                color={active("/insights") ? "#fa6400" : "#666"}
+              />
+            }
+            active={active("/insights")}
+            onClick={() => navigate("/insights")}
           />
           <NavItem
             label="Proyectos"

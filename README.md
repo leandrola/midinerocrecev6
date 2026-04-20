@@ -61,14 +61,14 @@ This is a strict constraint for all future changes.
 * Data is persisted using IndexedDB (Dexie)
 * Each import MUST fully replace the previous dataset
 
-### Forbidden:
+### Forbidden
 
 * mock data
 * fallback data
 * hardcoded datasets
 * demo/sample content
 
-### Behavior rule:
+### Behavior rule
 
 If no file is imported:
 → The UI must show empty state (no rows, no charts)
@@ -81,7 +81,7 @@ If no file is imported:
 * Headers NEVER change
 * Mapping is strictly position-based
 
-### Column mapping:
+### Column mapping
 
 0  → producto
 1  → funcionalidad
@@ -122,7 +122,7 @@ The Sankey represents project flow:
 
 canal → funcionalidad → deudaExperiencia → prioridadDiseno → factibilidadTecnica → estado
 
-### Rules:
+### Rules
 
 * Order is FIXED
 * No reordering
@@ -133,14 +133,14 @@ canal → funcionalidad → deudaExperiencia → prioridadDiseno → factibilida
 
 ## Sankey Behavior
 
-### Label truncation:
+### Label truncation
 
 * `funcionalidad` → max 15 chars
 * `deudaExperiencia` → max 15 chars
 * Use ellipsis ("...")
 * Do NOT modify underlying data
 
-### Interaction:
+### Interaction
 
 * Hover must highlight full connected subgraph
 * Must include upstream and downstream nodes
